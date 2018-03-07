@@ -45,7 +45,7 @@ sub os {
     foreach my $iid ( keys %$names ) {
         my $prod = $names->{$iid};
         next unless defined $prod;
-        return 'AirOS' if ( $prod =~ /station|beam|grid/i );	# Product names that match AirOS products
+        return 'AirOS' if ( $prod =~ /station|beam|grid|rocket/i );	# Product names that match AirOS products
         return 'UniFi' if ( $prod =~ /uap/i );	# Product names that match UAP
     }
 
