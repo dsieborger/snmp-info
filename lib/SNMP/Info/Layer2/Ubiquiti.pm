@@ -46,11 +46,11 @@ sub os {
         my $prod = $names->{$iid};
         next unless defined $prod;
         # Product names that match AirOS products
-        if ( (lc $prod) =~ /station/ or (lc $prod) =~ /beam/ or (lc $prod) =~ /grid/ ) {
+        if ( $prod =~ /station|beam|grid/i ) {
             return 'AirOS';
         # Product names that match UAP
         }
-        elsif ( (lc $prod) =~ /uap/ ) {
+        elsif ( $prod =~ /uap/i ) {
             return 'UniFi';
         }
         else {
@@ -112,12 +112,12 @@ sub model {
     my $desc = $ubnt->description() || '';
     
     ## Pull Model from beginning of description, separated by comma (EdgeSwitch)
-    if ( (lc $desc) =~ /^edgeswitch/ ) {
+    if ( $desc =~ /^edgeswitch/i ) {
         my @mydesc = split( /, /, $desc );
         return $mydesc[0];
     }
 
-    if ( ! ((lc $desc) =~ /edgeos/) ) {
+    if ( $desc !~ /edgeos/i ) {
         # Not sure what type of device this is to get Model
         # Wireless devices report dot11_prod_name
         # EdgeSwitch includes mode directly and edgeos logic is in else statement
@@ -144,10 +144,10 @@ sub model {
             my $ifDesc = $ifDescs->{$iid};
             next unless defined $ifDesc;
 
-            if ( (lc $ifDesc) =~ /^eth\d+$/ ) { # exclude vlan interfaces. Ex: eth1.5
+            if ( $ifDesc =~ /^eth\d+$/i ) { # exclude vlan interfaces. Ex: eth1.5
                 $ethCount++;
             }
-            elsif ( (lc $ifDesc) =~ /^switch/ ) {
+            elsif ( $ifDesc =~ /^switch/i ) {
                 $switchCount++;
             }
         }
