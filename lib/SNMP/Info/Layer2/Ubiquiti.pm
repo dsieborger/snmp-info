@@ -153,22 +153,22 @@ sub model {
         }
 
         ## If people have other models to further fine-tune this logic that would be great. 
-        if ( $ethCount eq 9 ) {
+        if ( $ethCount == 9 ) {
             ## Should be ER Infinity
             return "EdgeRouter Infinity"
         }
-        if ( $ethCount eq 8 ) {
+        if ( $ethCount == 8 ) {
             ## Could be ER-8 Pro, ER-8, or EP-R8
             return "EdgeRouter 8-Port"
         }
-        elsif ( $ethCount eq 5 and $cpuCount eq 4 ) {
+        elsif ( $ethCount == 5 and $cpuCount == 4 ) {
             ## Could be ER-X or ER-X-SFP
             return "EdgeRouter X 5-Port"
         }
-        elsif ( $ethCount eq 5 ) {
+        elsif ( $ethCount == 5 ) {
             return "EdgeRouter PoE 5-Port"
         }
-        elsif ( $ethCount eq 3 and $cpuCount eq 2 ) {
+        elsif ( $ethCount == 3 and $cpuCount == 2 ) {
             return "EdgeRouter LITE 3-Port"
         }
         else {
