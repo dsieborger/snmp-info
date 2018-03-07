@@ -45,22 +45,13 @@ sub os {
     foreach my $iid ( keys %$names ) {
         my $prod = $names->{$iid};
         next unless defined $prod;
-        # Product names that match AirOS products
-        if ( $prod =~ /station|beam|grid/i ) {
-            return 'AirOS';
-        # Product names that match UAP
-        }
-        elsif ( $prod =~ /uap/i ) {
-            return 'UniFi';
-        }
+        return 'AirOS' if ( $prod =~ /station|beam|grid/i );	# Product names that match AirOS products
+        return 'UniFi' if ( $prod =~ /uap/i );	# Product names that match UAP
     }
 
     ## EdgeMAX OS (EdgeSwitch and EdgeRouter) name is first field split by space
-    my $ver = $ubnt->description() || '';
-
-    my @myver = split( / /, $ver );
-
-    return $myver[0];
+    my $desc = $ubnt->description() || '';
+    return split( / /, $desc )[0];
 }
 
 sub os_ver {
@@ -73,18 +64,10 @@ sub os_ver {
         next unless defined $ver;
         return $ver;
     }
-    my $ver = $dot11->description() || '';
-    if ( $ver =~ /^edgeswitch/ ) {
-        ## EdgeSwitch OS version is second field split by comma
-        my @myver = split( /, /, $ver );
 
-        return $myver[1];
-    }
-
-    ## EdgeRouter OS version is second field split by space
-    my @myver = split( / /, $ver );
-
-    return $myver[1];
+    my $desc = $dot11->description() || '';
+    return split( /, /, $desc )[1] if ( $desc =~ /^edgeswitch/i );	# EdgeSwitch
+    return split( / /, $desc )[1];	# EdgeRouter
 }
 
 sub vendor {
@@ -105,63 +88,24 @@ sub model {
     my $desc = $ubnt->description() || '';
     
     ## Pull Model from beginning of description, separated by comma (EdgeSwitch)
-    if ( $desc =~ /^edgeswitch/i ) {
-        my @mydesc = split( /, /, $desc );
-        return $mydesc[0];
-    }
+    return split( /, /, $desc )[0] if ( $desc =~ /^edgeswitch/i );
 
     if ( $desc =~ /edgeos/i ) {
         ## do some logic to determine ER model based on tech specs from ubnt:
         ## https://help.ubnt.com/hc/en-us/articles/219652227--EdgeRouter-Which-EdgeRouter-Should-I-Use-#tech%20specs
         ## Would be nice if UBNT simply adds the model string to their SNMP daemon directly
-        my $ethCount = 0;
-        my $switchCount = 0;
-        #my $sfpCount = 0;
-        #my $poeCount = 0;  
-        my $memTotalReal = $ubnt->memTotalReal;   
-        my $cpuLoad = $ubnt->hrProcessorLoad;
-        my $cpuCount = 0;
-        ## My perl is lacking. Not sure if there's a more efficient way to find the cpu count
-        foreach my $iid ( keys %$cpuLoad ) {
-            $cpuCount++;
-        }
-        
-        my $ifDescs = $ubnt->ifDescr;
-        foreach my $iid ( keys %$ifDescs ) {
-            my $ifDesc = $ifDescs->{$iid};
-            next unless defined $ifDesc;
-
-            if ( $ifDesc =~ /^eth\d+$/i ) { # exclude vlan interfaces. Ex: eth1.5
-                $ethCount++;
-            }
-            elsif ( $ifDesc =~ /^switch/i ) {
-                $switchCount++;
-            }
-        }
+        my $memTotalReal = $ubnt->memTotalReal;
+        my $cpuCount = scalar keys %{$ubnt->hrProcessorLoad};
+        my $ethCount = scalar grep /^eth\d+$/i, values %{$ubnt->ifDescr}; # exclude vlan interfaces. Ex: eth1.5
+        my $switchCount = scalar grep /^switch/i, values %{$ubnt->ifDescr};
 
         ## If people have other models to further fine-tune this logic that would be great. 
-        if ( $ethCount == 9 ) {
-            ## Should be ER Infinity
-            return "EdgeRouter Infinity"
-        }
-        if ( $ethCount == 8 ) {
-            ## Could be ER-8 Pro, ER-8, or EP-R8
-            return "EdgeRouter 8-Port"
-        }
-        elsif ( $ethCount == 5 and $cpuCount == 4 ) {
-            ## Could be ER-X or ER-X-SFP
-            return "EdgeRouter X 5-Port"
-        }
-        elsif ( $ethCount == 5 ) {
-            return "EdgeRouter PoE 5-Port"
-        }
-        elsif ( $ethCount == 3 and $cpuCount == 2 ) {
-            return "EdgeRouter LITE 3-Port"
-        }
-        else {
-            ## failback string
-            return "EdgeRouter eth-$ethCount switch-$switchCount mem-$memTotalReal cpuNum-$cpuCount";
-        }
+        return "EdgeRouter Infinity" if ( $ethCount == 9 );	## Should be ER Infinity
+        return "EdgeRouter 8-Port" if ( $ethCount == 8 );	## Could be ER-8 Pro, ER-8, or EP-R8
+        return "EdgeRouter X 5-Port" if ( $ethCount == 5 and $cpuCount == 4 );	## Could be ER-X or ER-X-SFP
+        return "EdgeRouter PoE 5-Port" if ( $ethCount == 5 );
+        return "EdgeRouter LITE 3-Port" if ( $ethCount == 3 and $cpuCount == 2 );
+        return "EdgeRouter eth-$ethCount switch-$switchCount mem-$memTotalReal cpuNum-$cpuCount";	# fallback
     }
 }
 
@@ -183,10 +127,9 @@ sub mac {
 
     foreach my $iid ( keys %$ifDescs ) {
         my $ifDesc = $ifDescs->{$iid};
-        next unless defined $ifDesc;
         ## CPU Interface will have the primary MAC for EdgeSwitch
         ## eth0 will have primary MAC for linux-based UBNT devices
-        if ( $ifDesc =~ /CPU|^eth0$/ ) {
+        if ( defined $ifDesc and $ifDesc =~ /CPU|^eth0$/ ) {
             my $mac = $ubnt->ifPhysAddress->{$iid};
 
             # syntax stolen from sub munge_mac in SNMP::Info
