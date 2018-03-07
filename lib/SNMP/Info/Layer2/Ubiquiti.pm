@@ -53,9 +53,6 @@ sub os {
         elsif ( $prod =~ /uap/i ) {
             return 'UniFi';
         }
-        else {
-            # Continue below to find OS name
-        }
     }
 
     ## EdgeMAX OS (EdgeSwitch and EdgeRouter) name is first field split by space
@@ -75,10 +72,6 @@ sub os_ver {
         my $ver = $versions->{$iid};
         next unless defined $ver;
         return $ver;
-        ## Not sure what this function does, it seems to be extraneous being in the same code block after a return statement?
-        if ( $ver =~ /([\d\.]+)/ ) {
-            return $1;
-        }
     }
     my $ver = $dot11->description() || '';
     if ( $ver =~ /^edgeswitch/ ) {
@@ -117,13 +110,7 @@ sub model {
         return $mydesc[0];
     }
 
-    if ( $desc !~ /edgeos/i ) {
-        # Not sure what type of device this is to get Model
-        # Wireless devices report dot11_prod_name
-        # EdgeSwitch includes mode directly and edgeos logic is in else statement
-        return;
-    }
-    else {
+    if ( $desc =~ /edgeos/i ) {
         ## do some logic to determine ER model based on tech specs from ubnt:
         ## https://help.ubnt.com/hc/en-us/articles/219652227--EdgeRouter-Which-EdgeRouter-Should-I-Use-#tech%20specs
         ## Would be nice if UBNT simply adds the model string to their SNMP daemon directly
@@ -187,7 +174,6 @@ sub serial {
         $serial =~ s/://g;
         return uc $serial;
     }
-    return;
 }
 
 ## UBNT doesn't put the primary-mac interface at index 1
@@ -208,9 +194,6 @@ sub mac {
             return $mac if $mac =~ /^([0-9A-F][0-9A-F]:){5}[0-9A-F][0-9A-F]$/i;  
         }
     }
-    
-    # MAC malformed or missing
-    return;
 }
 
 1;
