@@ -186,7 +186,7 @@ sub mac {
         next unless defined $ifDesc;
         ## CPU Interface will have the primary MAC for EdgeSwitch
         ## eth0 will have primary MAC for linux-based UBNT devices
-        if ( $ifDesc =~ /CPU/ or $ifDesc eq 'eth0' ) {
+        if ( $ifDesc =~ /CPU|^eth0$/ ) {
             my $mac = $ubnt->ifPhysAddress->{$iid};
 
             # syntax stolen from sub munge_mac in SNMP::Info
